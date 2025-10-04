@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phishing Email Detection</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      top: -250px;
+      right: -250px;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      bottom: -150px;
+      left: -150px;
+      animation: float 8s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(20px); }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 500px;
+      z-index: 1;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .icon {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .icon svg {
+      width: 35px;
+      height: 35px;
+      fill: white;
+    }
+
+    h1 {
+      color: #333;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    form {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #555;
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      transition: all 0.3s ease;
+      background: #fafafa;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 12px;
+      animation: fadeIn 0.5s ease-out;
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .result-icon {
+      width: 30px;
+      height: 30px;
+    }
+
+    .probability-bars {
+      margin-top: 15px;
+    }
+
+    .prob-item {
+      margin-bottom: 12px;
+    }
+
+    .prob-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .prob-bar {
+      height: 8px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .prob-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.8s ease-out;
+    }
+
+    .safe {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border: 2px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .safe .prob-fill {
+      background: linear-gradient(90deg, #28a745, #20c997);
+    }
+
+    .phish {
+      background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+      border: 2px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .phish .prob-fill {
+      background: linear-gradient(90deg, #dc3545, #e74c3c);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+      </div>
+      <h1>Phishing Detector</h1>
+      <p class="subtitle">Deteksi email phishing dengan AI</p>
+    </div>
+
+    <form id="predictForm">
+      <label for="email_text">Masukkan Teks Email</label>
+      <textarea id="email_text" name="email_text" placeholder="Paste konten email di sini untuk dianalisis..." required></textarea>
+      <button type="submit" id="submitBtn">
+        <span id="btnText">Analisis Email</span>
+      </button>
+    </form>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("predictForm");
+    const resultDiv = document.getElementById("result");
+    const submitBtn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const emailText = document.getElementById("email_text").value;
+      
+      // Loading state
+      submitBtn.disabled = true;
+      btnText.innerHTML = 'Menganalisis<span class="loading"></span>';
+      resultDiv.classList.remove("show");
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email_text: emailText })
+        });
+
+        const data = await response.json();
+        
+        const isSafe = data.prediction === "Safe Email";
+        const safeProb = (data.probability["Safe Email"] * 100).toFixed(1);
+        const phishProb = (data.probability["Phishing Email"] * 100).toFixed(1);
+
+        resultDiv.className = `result ${isSafe ? 'safe' : 'phish'} show`;
+        
+        const icon = isSafe 
+          ? '<svg class="result-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
+          : '<svg class="result-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2v-2zm0-6h2v4h-2v-4z"/></svg>';
+
+        resultDiv.innerHTML = `
+          <div class="result-header">
+            ${icon}
+            <span>${isSafe ? 'Email Aman' : 'Potensi Phishing!'}</span>
+          </div>
+          <div class="probability-bars">
+            <div class="prob-item">
+              <div class="prob-label">
+                <span>Safe Email</span>
+                <span>${safeProb}%</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-fill" style="width: ${safeProb}%; background: linear-gradient(90deg, #28a745, #20c997);"></div>
+              </div>
+            </div>
+            <div class="prob-item">
+              <div class="prob-label">
+                <span>Phishing Email</span>
+                <span>${phishProb}%</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-fill" style="width: ${phishProb}%; background: linear-gradient(90deg, #dc3545, #e74c3c);"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.className = "result phish show";
+        resultDiv.innerHTML = `
+          <div class="result-header">
+            <span>⚠️ Terjadi kesalahan</span>
+          </div>
+          <p style="margin-top: 10px; font-size: 14px;">Tidak dapat terhubung ke server. Silakan coba lagi.</p>
+        `;
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = 'Analisis Email';
+      }
+    });
+  </script>
+</body>
+</html>
